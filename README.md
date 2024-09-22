@@ -27,8 +27,7 @@ Contains driver for display information with LCD-display based on SSD1306 OLED
 Contains driver for the inertial measurement units. MPU-6050 can measure acceleration, turn rate and the magnetic field in three axis.
 
 ## _Hardware_ folder
-Contains schematic diagrams, PCB, BOM-files,
-
+Contains schematic diagrams, PCB, BOM-files, and other artifacts related to the hardware part of this project.
 # Links
 [MicroPython for Raspberry Pi RP2xxx boards](https://docs.micropython.org/en/latest/rp2/quickref.html)<br>
 [Hexapod Leg Inverse Kinematics](https://www.youtube.com/watch?v=HjmIOKSp7v4)<br>
