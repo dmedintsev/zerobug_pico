@@ -1,9 +1,5 @@
 import asyncio
 from sys import exit
-import time
-from os import system
-
-# from platform import system
 
 from bleak import BleakClient, uuids
 import keyboard
