@@ -51,7 +51,7 @@ def encode_message(message):
 
 def decode_message(message):
     """Decode a message from bytes."""
-    msg =  message.decode('utf-8')
+    msg = message.decode('utf-8')
     print(f"msg {msg}")
     global speed, angle
     speed = 0
@@ -88,10 +88,8 @@ async def receive_data_task(read_characteristic):
         try:
             # This blocks until new data is available
             data = read_characteristic.read()
-
             if data:
                 print(f"Received: {decode_message(data)} speed: {speed}, angle: {angle}")
-                
                 await asyncio.sleep(1)
         except Exception as e:
             print(f"Error receiving data: {e}")
@@ -102,12 +100,12 @@ async def hex_move():
     print("Init Hexapod")
     _hex = Hexapod()
     print("move")
-    _hex.move(speed=0, angle=0)
+    await _hex.move(speed=0, angle=0)
     while True:
         await _hex.move(speed, angle)
         await asyncio.sleep(0)
-    
-    
+
+
 async def run_peripheral_mode():
     """Run the peripheral mode."""
     global speed, angle
@@ -132,9 +130,8 @@ async def run_peripheral_mode():
 
     while True:
         async with await aioble.advertise(
-            BLE_ADVERTISING_INTERVAL, name=BLE_NAME, services=[BLE_SVC_UUID],
-            appearance=BLE_APPEARANCE) as connection:
-
+                BLE_ADVERTISING_INTERVAL, name=BLE_NAME, services=[BLE_SVC_UUID],
+                appearance=BLE_APPEARANCE) as connection:
             print(f"{BLE_NAME} connected to {connection.device}")
 
             # Create tasks for sending and receiving data
