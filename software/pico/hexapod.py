@@ -152,7 +152,7 @@ class Hexapod:
         self.pitch = 0  # tangaj
         self.yaw = 0  # kyrs\
 
-        self.leg_1 = Leg(1, MotorSet(self.driver_1, 4), MotorSet(self.driver_1, 5), MotorSet(self.driver_1, 6), angle= 180-2*self.angle) # ok
+        self.leg_1 = Leg(1, MotorSet(self.driver_1, 4), MotorSet(self.driver_1, 5), MotorSet(self.driver_1, 6), angle= - self.angle) # ok
         self.leg_1.deviation_a = 0
         self.leg_1.deviation_b = -15
         self.leg_1.deviation_c = -20
@@ -162,7 +162,7 @@ class Hexapod:
         self.leg_2.deviation_b = -23
         self.leg_2.deviation_c = -14
 
-        self.leg_3 = Leg(3, MotorSet(self.driver_1, 12), MotorSet(self.driver_1, 13), MotorSet(self.driver_1, 14), angle= 180-self.angle)  # ok
+        self.leg_3 = Leg(3, MotorSet(self.driver_1, 12), MotorSet(self.driver_1, 13), MotorSet(self.driver_1, 14), angle= self.angle)  # ok
         self.leg_3.deviation_a = 0
         self.leg_3.deviation_b = -23
         self.leg_3.deviation_c = -8
