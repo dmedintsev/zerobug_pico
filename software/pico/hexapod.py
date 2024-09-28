@@ -1,5 +1,6 @@
 import asyncio
 import time
+import sys
 
 from machine import Pin, I2C
 import math
@@ -41,6 +42,7 @@ class MotorSet:
 class Leg:
     def __init__(self, leg_id, motor_a: MotorSet, motor_b: MotorSet, motor_c: MotorSet, angle: int) -> None:
         self.road_map = []
+        self.direction = 1
         self.leg_id = leg_id
         self.motor_a = motor_a
         self.motor_b = motor_b
@@ -129,6 +131,7 @@ class Hexapod:
 
     def __init__(self) -> None:
         self.motor_angles = {}
+        self._direction = 1
         self.angle = 30
         try:
             self.driver_1 = MotorDriver(0x40)
@@ -144,7 +147,6 @@ class Hexapod:
             sys.exit(-1)
 
         self.speed_multiplier = 0
-        self.direction = 0  # angle of movement direction
         self.roll = 0  # kren
         self.pitch = 0  # tangaj
         self.yaw = 0  # kyrs\
@@ -186,7 +188,7 @@ class Hexapod:
         self.leg_6.deviation_c = 25
 
     def _step_left(self, angle):
-        if self.speed_multiplier == 0:
+        if self.speed_multiplier < 0:
             step = 0
         else:
             step = self.h_step
@@ -199,9 +201,8 @@ class Hexapod:
         self.leg_2.wave_move(-step, 0, 0, angle)
         self.leg_6.wave_move(-step, 0, 0, angle)
 
-
     def _step_right(self, angle):
-        if self.speed_multiplier == 0:
+        if self.speed_multiplier < 0:
             step = 0
         else:
             step = self.h_step
@@ -213,7 +214,6 @@ class Hexapod:
         self.leg_4.wave_move(step, 0, 0, angle)
         self.leg_2.wave_move(step, 0, 0, angle)
         self.leg_6.wave_move(step, 0, 0, angle)
-
 
     def _speed(self, speed):
         self.speed_multiplier = speed
@@ -251,6 +251,19 @@ class Hexapod:
             await asyncio.sleep(0.5)
             print("idle")
 
+    @property
+    def movement_direction(self):
+        return self._direction
+
+    @movement_direction.setter
+    def movement_direction(self, _direction):
+        self.leg_1.direction = _direction
+        self.leg_2.direction = _direction
+        self.leg_3.direction = _direction
+        self.leg_4.direction = _direction
+        self.leg_5.direction = _direction
+        self.leg_6.direction = _direction
+        self._direction = _direction
 
 
 async def main():

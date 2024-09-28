@@ -43,8 +43,13 @@ BLE_ADVERTISING_INTERVAL = 2000
 # state variables
 message_count = 0
 
+# Init HexaPod
+print("Init Hexapod")
+_hex = Hexapod()
+_hex.move(speed=-1, angle=0)
 speed = 0
 angle = 0
+
 
 def encode_message(message):
     """Encode a message to bytes."""
@@ -55,7 +60,7 @@ def decode_message(message):
     """Decode a message from bytes."""
     msg = message.decode('utf-8')
     global speed, angle
-    speed = 0
+    speed = -1 # value -1 park leg to the zero position
     angle = 0
     if 'w' in msg:
         speed = 1
@@ -64,7 +69,10 @@ def decode_message(message):
     if 'd' in msg:
         angle = -45
     if 's' in msg:
-        angle -= 180
+        _hex.movement_direction = -1
+        speed = 1
+    else:
+        _hex.movement_direction = 1
     return msg
 
 
@@ -101,10 +109,6 @@ async def receive_data_task(read_characteristic):
 
 async def hex_move():
     global speed, angle
-    print("Init Hexapod")
-    _hex = Hexapod()
-    print("move")
-    await _hex.move(speed=0, angle=0)
     while True:
         await _hex.move(speed, angle)
         await asyncio.sleep(0)
