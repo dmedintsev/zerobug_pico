@@ -130,10 +130,19 @@ class Hexapod:
     def __init__(self) -> None:
         self.motor_angles = {}
         self.angle = 30
-        self.driver_1 = MotorDriver(0x40)
-        self.driver_2 = MotorDriver(0x41)
-#         self.driver_1 = None
-#         self.driver_2 = None
+        try:
+            self.driver_1 = MotorDriver(0x40)
+        except Exception as e:
+            self.driver_1 = None
+            print(f"Servo driver 1: {e}")
+        try:
+            self.driver_2 = MotorDriver(0x41)
+        except Exception as e:
+            self.driver_2 = None
+            print(f"Servo driver 2: {e}")
+        if self.driver_1 is None or self.driver_2 is None:
+            sys.exit(-1)
+
         self.speed_multiplier = 0
         self.direction = 0  # angle of movement direction
         self.roll = 0  # kren
