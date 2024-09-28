@@ -32,7 +32,9 @@ Contains schematic diagrams, PCB, BOM-files, and other artifacts related to the 
 [MicroPython for Raspberry Pi RP2xxx boards](https://docs.micropython.org/en/latest/rp2/quickref.html)<br>
 [Hexapod Leg Inverse Kinematics](https://www.youtube.com/watch?v=HjmIOKSp7v4)<br>
 [Raspberry Pi to Pico Bluetooth](https://github.com/kevinmcaleer/pi_to_pico_bluetooth/tree/main) by [Kevin McAleer](https://github.com/kevinmcaleer)<br>
-[PCA9685 for Pico](https://github.com/kevinmcaleer/pca9685_for_pico)
+[PCA9685 for Pico](https://github.com/kevinmcaleer/pca9685_for_pico)<br>
+[MIT APP INVENTOR](https://appinventor.mit.edu/), video [instruction](https://www.youtube.com/watch?v=RvbWl8rZOoQ)<br>
+
 # CAD model
 For CAD files, see the original project: https://github.com/CoretechR/ZeroBug
 
