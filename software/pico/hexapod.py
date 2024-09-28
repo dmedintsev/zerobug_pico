@@ -16,18 +16,6 @@ def speed_divider(multiplier=1):
     return result_speed
 
 
-def lcm(*list):
-    def gcd(n, m):
-        if m == 0:
-            return n
-        return gcd(m, n % m)
-
-    lcm = 1
-    for i in list:
-        lcm = lcm * i // gcd(lcm, i)
-    return lcm
-
-
 class MotorDriver:
     max_speed = 360  # 360ms for 180 degree rotation. From the servo specification
     rotation_range = 180
@@ -35,7 +23,6 @@ class MotorDriver:
     def __init__(self, driver_addr) -> None:
         self.driver_addr = driver_addr
         self.driver = Servos(i2c=i2c, address=driver_addr)
-#         self.driver = None
 
 
 class MotorSet:
@@ -68,9 +55,9 @@ class Leg:
         self.J2L = 50  # length of arm in mm from body to the middle
         self.J3L = 70  # length of arm in mm from middle to the ground
         self.J3_rest = math.acos(((self.J2L * self.J2L) + (self.J3L * self.J3L) - (
-                    (self.Y_Rest * self.Y_Rest) + (self.Z_Rest * self.Z_Rest))) / (2 * self.J2L * self.J3L)) * (
-                                   180 / math.pi)
-        self.old_coordinate = {"X":0, "Y":0, "Z":0}
+                (self.Y_Rest * self.Y_Rest) + (self.Z_Rest * self.Z_Rest))) / (2 * self.J2L * self.J3L)) * (
+                               180 / math.pi)
+        self.old_coordinate = {"X": 0, "Y": 0, "Z": 0}
         self.angle = angle
 
     def drive(self):
@@ -91,19 +78,20 @@ class Leg:
         Z = -Z
         Z += self.Z_Rest
         Y += self.Y_Rest
-        if self.leg_id in [1,2,3]:
-            X=-X
+        X = X * self.direction
+        if self.leg_id in [1, 2, 3]:
+            X = -X
+        if self.leg_id not in [2, 5]:
+            X = X + X * math.cos(angle)
 
         Y = Y + X * math.sin(angle)
 
-        if self.leg_id not in [2, 5]:
-            X = X + X * math.cos(angle)
         # CALCULATE INVERSE KINEMATIC SOLUTION
         J1 = math.atan(X / Y) * (180 / math.pi)
         H = math.sqrt((Y * Y) + (X * X))
         L = math.sqrt((H * H) + (Z * Z))
         J3 = math.acos(((self.J2L * self.J2L) + (self.J3L * self.J3L) - (L * L)) / (2 * self.J2L * self.J3L)) * (
-                    180 / math.pi)
+                180 / math.pi)
         J3_result = 2 * self.J3_rest - J3
         B = math.acos(((L * L) + (self.J2L * self.J2L) - (self.J3L * self.J3L)) / (2 * L * self.J2L)) * (180 / math.pi)
         A = math.atan(Z / H) * (180 / math.pi)  # BECAUSE Z REST IS NEGATIVE, THIS RETURNS A NEGATIVE VALUE
@@ -117,29 +105,29 @@ class Leg:
     def wave_move(self, X, Y, Z, yaw):
         self.road_map = []
 
-        part = 180/self.parts
-        X_part = (self.old_coordinate["X"]- X) / self.parts
-        Y_part = (self.old_coordinate["Y"]- Y) / self.parts
+        part = 180 / self.parts
+        X_part = (self.old_coordinate["X"] - X) / self.parts
+        Y_part = (self.old_coordinate["Y"] - Y) / self.parts
 
-        for i in range(self.parts+1):
+        for i in range(self.parts + 1):
             _x = self.old_coordinate["X"] - X_part * i
             _y = self.old_coordinate["Y"] + Y_part * i
             if self.old_coordinate["X"] > X:
-                _z = Hexapod.up_*math.sin(math.radians(i*part))
+                _z = Hexapod.up_ * math.sin(math.radians(i * part))
             else:
                 _z = Z
             self.road_map.append(self._cartesian_move(_x,
                                                       _y,
                                                       _z,
                                                       yaw))
-        self.old_coordinate = {"X":X, "Y":Y, "Z":Z}
+        self.old_coordinate = {"X": X, "Y": Y, "Z": Z}
 
 
 class Hexapod:
     h_step = 15
     up_ = -15
 
-    def __init__(self,) -> None:
+    def __init__(self) -> None:
         self.motor_angles = {}
         self.angle = 30
         self.driver_1 = MotorDriver(0x40)
@@ -152,32 +140,38 @@ class Hexapod:
         self.pitch = 0  # tangaj
         self.yaw = 0  # kyrs\
 
-        self.leg_1 = Leg(1, MotorSet(self.driver_1, 4), MotorSet(self.driver_1, 5), MotorSet(self.driver_1, 6), angle= - self.angle) # ok
+        self.leg_1 = Leg(1, MotorSet(self.driver_1, 4), MotorSet(self.driver_1, 5), MotorSet(self.driver_1, 6),
+                         angle=- self.angle)  # ok
         self.leg_1.deviation_a = 0
         self.leg_1.deviation_b = -15
         self.leg_1.deviation_c = -20
 
-        self.leg_2 = Leg(2, MotorSet(self.driver_1, 8), MotorSet(self.driver_1, 9), MotorSet(self.driver_1, 10), angle= 0) # ok
+        self.leg_2 = Leg(2, MotorSet(self.driver_1, 8), MotorSet(self.driver_1, 9), MotorSet(self.driver_1, 10),
+                         angle=0)  # ok
         self.leg_2.deviation_a = 7
         self.leg_2.deviation_b = -23
         self.leg_2.deviation_c = -14
 
-        self.leg_3 = Leg(3, MotorSet(self.driver_1, 12), MotorSet(self.driver_1, 13), MotorSet(self.driver_1, 14), angle= self.angle)  # ok
+        self.leg_3 = Leg(3, MotorSet(self.driver_1, 12), MotorSet(self.driver_1, 13), MotorSet(self.driver_1, 14),
+                         angle=self.angle)  # ok
         self.leg_3.deviation_a = 0
         self.leg_3.deviation_b = -23
         self.leg_3.deviation_c = -8
-        #
-        self.leg_4 = Leg(4, MotorSet(self.driver_2, 15), MotorSet(self.driver_2, 14), MotorSet(self.driver_2, 13), angle= self.angle) # ok
+
+        self.leg_4 = Leg(4, MotorSet(self.driver_2, 15), MotorSet(self.driver_2, 14), MotorSet(self.driver_2, 13),
+                         angle=self.angle)  # ok
         self.leg_4.deviation_a = 10
         self.leg_4.deviation_b = 20
         self.leg_4.deviation_c = -5
 
-        self.leg_5 = Leg(5, MotorSet(self.driver_2, 11), MotorSet(self.driver_2, 10), MotorSet(self.driver_2, 9), angle= 0) # ok
+        self.leg_5 = Leg(5, MotorSet(self.driver_2, 11), MotorSet(self.driver_2, 10), MotorSet(self.driver_2, 9),
+                         angle=0)  # ok
         self.leg_5.deviation_a = 10
         self.leg_5.deviation_b = 5
         self.leg_5.deviation_c = 7
-        # for leg_6
-        self.leg_6 = Leg(6, MotorSet(self.driver_2, 7), MotorSet(self.driver_2, 6), MotorSet(self.driver_2, 5), angle= - self.angle) # ok
+
+        self.leg_6 = Leg(6, MotorSet(self.driver_2, 7), MotorSet(self.driver_2, 6), MotorSet(self.driver_2, 5),
+                         angle=- self.angle)  # ok
         self.leg_6.deviation_a = 0
         self.leg_6.deviation_b = 17
         self.leg_6.deviation_c = 25
@@ -249,17 +243,20 @@ class Hexapod:
             print("idle")
 
 
-if __name__ == "__main__":
+
+async def main():
     _hex = Hexapod()
     print("move")
-    _hex.move(speed=0, angle=0)
+    await _hex.move(speed=-1, angle=0)
     print("sleep")
     time.sleep(6)
 
     while 1:
-        _hex.move(speed=1, angle=0)
+        await  _hex.move(speed=1, angle=0)
         time.sleep(0.5)
 
 
+if __name__ == "__main__":
+    asyncio.run(main())
 
 

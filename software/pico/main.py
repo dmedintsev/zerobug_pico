@@ -14,12 +14,14 @@ _READ_CHARACTERISTIC_UUID = bluetooth.UUID(0x2A6F)   # Peripheral responds here
 sensor_temp = ADC(4)
 conversion_factor = 3.3 / 65535  # Conversion factor for ADC reading to voltage
 
+
 # Function to read the internal temperature
 def read_temperature():
     raw_value = sensor_temp.read_u16()
     voltage = raw_value * conversion_factor
     temperature = 27 - (voltage - 0.706) / 0.001721
     return temperature
+
 
 # Show the MAC address for the current Pico
 ble = bluetooth.BLE()
@@ -52,7 +54,6 @@ def encode_message(message):
 def decode_message(message):
     """Decode a message from bytes."""
     msg = message.decode('utf-8')
-    print(f"msg {msg}")
     global speed, angle
     speed = 0
     angle = 0
@@ -65,6 +66,7 @@ def decode_message(message):
     if 's' in msg:
         angle -= 180
     return msg
+
 
 async def send_data_task(connection, write_characteristic):
     """Send data to the central device."""
@@ -81,6 +83,7 @@ async def send_data_task(connection, write_characteristic):
             print(f"Error while sending data: {e}")
             continue
 
+
 async def receive_data_task(read_characteristic):
     """Receive data from the central device."""
     global speed, angle
@@ -94,6 +97,7 @@ async def receive_data_task(read_characteristic):
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
+
 
 async def hex_move():
     global speed, angle
