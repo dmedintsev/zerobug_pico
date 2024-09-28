@@ -1,6 +1,6 @@
 import aioble
 import bluetooth
-from machine import ADC, Pin
+from machine import ADC
 import asyncio
 
 from hexapod import Hexapod
@@ -63,6 +63,7 @@ def decode_message(message):
     speed = -1 # value -1 park leg to the zero position
     angle = 0
     if 'w' in msg:
+        _hex.movement_direction = 1
         speed = 1
     if 'a' in msg:
         angle = 45
@@ -71,8 +72,6 @@ def decode_message(message):
     if 's' in msg:
         _hex.movement_direction = -1
         speed = 1
-    else:
-        _hex.movement_direction = 1
     return msg
 
 
