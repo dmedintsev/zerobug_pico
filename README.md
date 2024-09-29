@@ -1,7 +1,7 @@
 # zerobug_pico
 This project was inspired by [CoretechR](https://github.com/CoretechR) and its [ZeroBug-Lite](https://github.com/CoretechR/ZeroBug-Lite) project. 
 
-It has agood CAD model, and is designed for small Raspberry Pi Zero.
+It has a good CAD model, and is designed for small Raspberry Pi Zero.
 
 In my opinion [Raspberry Pi Pico W](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html#raspberry-pi-pico-and-pico-h) witch is much easier to use, especially for the beginners.<br>
 There's also no need to setup SD-card, WiFi, create SSH connection etc.
