@@ -28,6 +28,18 @@ Contains driver for the inertial measurement units. MPU-6050 can measure acceler
 
 ## _Hardware_ folder
 Contains schematic diagrams, PCB, BOM-files, and other artifacts related to the hardware part of this project.
+
+# Functionality
+If you start bt_server.py on your PC with Bluetooth (BLE) module, you cat control this Hexapod with next commands:
+ * w - move forward
+ * s - move back
+ * a+w - move left at an angle of 45° without turning the body relative to the central axis
+ * d+w - move right at an angle of 45° without turning the body relative to the central axis
+ * r+d or r - turn around through the left
+ * r+a - turn around through the left
+
+
+ * r+a 
 # Links
 [MicroPython for Raspberry Pi RP2xxx boards](https://docs.micropython.org/en/latest/rp2/quickref.html)<br>
 [Hexapod Leg Inverse Kinematics](https://www.youtube.com/watch?v=HjmIOKSp7v4)<br>
