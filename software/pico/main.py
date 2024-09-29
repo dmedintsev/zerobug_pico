@@ -63,14 +63,20 @@ def decode_message(message):
     speed = -1 # value -1 park leg to the zero position
     angle = 0
     if 'w' in msg:
-        _hex.movement_direction = 1
+        _hex.direction = 1
+        _hex.rotation = 0
         speed = 1
     if 'a' in msg:
         angle = 45
     if 'd' in msg:
         angle = -45
     if 's' in msg:
-        _hex.movement_direction = -1
+        _hex.direction = -1
+        _hex.rotation = 0
+        speed = 1
+    if 'r' in msg:
+        _hex.rotation = 1
+        _hex.direction = 1 if angle > 0 else -1
         speed = 1
     return msg
 
@@ -150,5 +156,6 @@ async def run_peripheral_mode():
             await asyncio.gather(*tasks)
             print(f"{IAM} disconnected")
             break
+
 
 asyncio.run(run_peripheral_mode())

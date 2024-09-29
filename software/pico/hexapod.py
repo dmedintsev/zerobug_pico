@@ -33,7 +33,7 @@ class MotorSet:
 
     def rotation(self, angle):
         self.driver.driver.position(index=self.id, degrees=angle)
-        # print(f"cannel_id:  {self.id}\t rotation angle:  {angle}")
+        # print(f"channel_id:  {self.id}\t rotation angle:  {angle}")
         time.sleep_us(500)
         #         return [f"motor_id {self.id}", angle]
         pass
@@ -43,6 +43,7 @@ class Leg:
     def __init__(self, leg_id, motor_a: MotorSet, motor_b: MotorSet, motor_c: MotorSet, angle: int) -> None:
         self.road_map = []
         self.direction = 1
+        self.rotation = 0
         self.leg_id = leg_id
         self.motor_a = motor_a
         self.motor_b = motor_b
@@ -50,7 +51,7 @@ class Leg:
         self.deviation_a = 0
         self.deviation_b = 0
         self.deviation_c = 0
-        self.parts = 10  # quantity of steps
+        self.parts = 15  # quantity of steps
         self.X_Rest = 0  # zero position at x-axis
         self.Y_Rest = 50  # zero position at y-axis
         self.Z_Rest = -30  # zero position at z-axis
@@ -80,13 +81,16 @@ class Leg:
         Z = -Z
         Z += self.Z_Rest
         Y += self.Y_Rest
-        X = X * self.direction
-        if self.leg_id in [1, 2, 3]:
-            X = -X
-        if self.leg_id not in [2, 5]:
-            X = X + X * math.cos(angle)
 
-        Y = Y + X * math.sin(angle)
+        X = X * self.direction
+        if not self.rotation:
+            if self.leg_id in [1, 2, 3]:
+                X = -X
+
+            if self.leg_id not in [2, 5]:
+                X = X + X * math.cos(angle)
+
+            Y = Y + X * math.sin(angle)
 
         # CALCULATE INVERSE KINEMATIC SOLUTION
         J1 = math.atan(X / Y) * (180 / math.pi)
@@ -102,7 +106,6 @@ class Leg:
             return J1 + 90 + self.deviation_a, 90 + J2 + self.deviation_b, 90 + J3_result + self.deviation_c
         else:  # right side
             return J1 + 90 + self.deviation_a, 90 - J2 + self.deviation_b, 90 - J3_result + self.deviation_c
-
 
     def wave_move(self, X, Y, Z, yaw):
         self.road_map = []
@@ -132,6 +135,7 @@ class Hexapod:
     def __init__(self) -> None:
         self.motor_angles = {}
         self._direction = 1
+        self._rotation = 0
         self.angle = 30
         try:
             self.driver_1 = MotorDriver(0x40)
@@ -252,11 +256,11 @@ class Hexapod:
             print("idle")
 
     @property
-    def movement_direction(self):
+    def direction(self):
         return self._direction
 
-    @movement_direction.setter
-    def movement_direction(self, _direction):
+    @direction.setter
+    def direction(self, _direction):
         self.leg_1.direction = _direction
         self.leg_2.direction = _direction
         self.leg_3.direction = _direction
@@ -265,13 +269,30 @@ class Hexapod:
         self.leg_6.direction = _direction
         self._direction = _direction
 
+    @property
+    def rotation(self):
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, _rotation):
+        self.leg_1.rotation = _rotation
+        self.leg_2.rotation = _rotation
+        self.leg_3.rotation = _rotation
+        self.leg_4.rotation = _rotation
+        self.leg_5.rotation = _rotation
+        self.leg_6.rotation = _rotation
+
+        self._rotation = _rotation
+
 
 async def main():
     _hex = Hexapod()
+    _hex.rotation = 1
+    _hex.direction = -1
     print("move")
     await _hex.move(speed=-1, angle=0)
     print("sleep")
-    time.sleep(6)
+    time.sleep(3)
 
     while 1:
         await  _hex.move(speed=1, angle=0)
@@ -280,5 +301,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
