@@ -10,7 +10,7 @@ from servo.servo import Servos
 
 
 def speed_divider(multiplier=1):
-    max_speed = 360  # 360ms for 180 degree rotation. From the servo specification
+    max_speed = 360  # 360ms for 180 degrees rotation. From the servo specification
     rotation_range = 180
     zero_speed = max_speed / 2  # zero speed
     result_speed = (zero_speed * multiplier) / rotation_range
@@ -18,7 +18,7 @@ def speed_divider(multiplier=1):
 
 
 class MotorDriver:
-    max_speed = 360  # 360ms for 180 degree rotation. From the servo specification
+    max_speed = 360  # 360ms for 180 degrees rotation. From the servo specification
     rotation_range = 180
 
     def __init__(self, driver_addr) -> None:
@@ -82,7 +82,6 @@ class Leg:
         Z += self.Z_Rest
         Y += self.Y_Rest
 
-        X = X * self.direction
         if not self.rotation:
             if self.leg_id in [1, 2, 3]:
                 X = -X
@@ -195,7 +194,7 @@ class Hexapod:
         if self.speed_multiplier < 0:
             step = 0
         else:
-            step = self.h_step
+            step = self.h_step*self.direction
 
         self.leg_1.wave_move(step, 0, 0, angle)
         self.leg_5.wave_move(step, 0, 0, angle)
@@ -209,7 +208,7 @@ class Hexapod:
         if self.speed_multiplier < 0:
             step = 0
         else:
-            step = self.h_step
+            step = self.h_step*self.direction
 
         self.leg_1.wave_move(-step, 0, 0, angle)
         self.leg_5.wave_move(-step, 0, 0, angle)
@@ -287,8 +286,8 @@ class Hexapod:
 
 async def main():
     _hex = Hexapod()
-    _hex.rotation = 1
-    _hex.direction = -1
+    _hex.rotation = 0
+    _hex.direction = 1
     print("move")
     await _hex.move(speed=-1, angle=0)
     print("sleep")
