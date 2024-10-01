@@ -76,7 +76,7 @@ class Leg:
                    f"{self.leg_id}:c": w}
 
     def _cartesian_move(self, X, Y, Z, yaw):
-        angle = self.angle + yaw
+        
         # OFFSET TO REST POSITION
         Z = -Z
         Z += self.Z_Rest
@@ -85,11 +85,11 @@ class Leg:
         if not self.rotation:
             if self.leg_id in [1, 2, 3]:
                 X = -X
+             
+            angle = self.angle + yaw
+            Y = self.Y_Rest + X * math.sin(angle)
+            X = X * math.cos(angle)
 
-            if self.leg_id not in [2, 5]:
-                X = X + X * math.cos(angle)
-
-            Y = Y + X * math.sin(angle)
 
         # CALCULATE INVERSE KINEMATIC SOLUTION
         J1 = math.atan(X / Y) * (180 / math.pi)
@@ -155,37 +155,37 @@ class Hexapod:
         self.yaw = 0  # kyrs\
 
         self.leg_1 = Leg(1, MotorSet(self.driver_1, 4), MotorSet(self.driver_1, 5), MotorSet(self.driver_1, 6),
-                         angle=- self.angle)  # ok
+                         angle = 180 -self.angle)  # ok
         self.leg_1.deviation_a = 0
         self.leg_1.deviation_b = -15
         self.leg_1.deviation_c = -20
 
         self.leg_2 = Leg(2, MotorSet(self.driver_1, 8), MotorSet(self.driver_1, 9), MotorSet(self.driver_1, 10),
-                         angle=0)  # ok
+                         angle = 0)  # ok
         self.leg_2.deviation_a = 7
         self.leg_2.deviation_b = -23
         self.leg_2.deviation_c = -14
 
         self.leg_3 = Leg(3, MotorSet(self.driver_1, 12), MotorSet(self.driver_1, 13), MotorSet(self.driver_1, 14),
-                         angle=self.angle)  # ok
+                         angle = self.angle -180)  # ok
         self.leg_3.deviation_a = 0
         self.leg_3.deviation_b = -23
         self.leg_3.deviation_c = -8
 
         self.leg_4 = Leg(4, MotorSet(self.driver_2, 15), MotorSet(self.driver_2, 14), MotorSet(self.driver_2, 13),
-                         angle=self.angle)  # ok
+                         angle = 180 -self.angle)  # ok
         self.leg_4.deviation_a = 10
         self.leg_4.deviation_b = 20
         self.leg_4.deviation_c = -5
 
         self.leg_5 = Leg(5, MotorSet(self.driver_2, 11), MotorSet(self.driver_2, 10), MotorSet(self.driver_2, 9),
-                         angle=0)  # ok
+                         angle = 0)  # ok
         self.leg_5.deviation_a = 10
         self.leg_5.deviation_b = 5
         self.leg_5.deviation_c = 7
 
         self.leg_6 = Leg(6, MotorSet(self.driver_2, 7), MotorSet(self.driver_2, 6), MotorSet(self.driver_2, 5),
-                         angle=- self.angle)  # ok
+                         angle = -self.angle+180)  # ok
         self.leg_6.deviation_a = 0
         self.leg_6.deviation_b = 17
         self.leg_6.deviation_c = 25
