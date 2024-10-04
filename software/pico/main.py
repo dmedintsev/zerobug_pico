@@ -1,18 +1,20 @@
-import aioble
 import bluetooth
 from machine import ADC
 import asyncio
 
 from hexapod import Hexapod
-
-# Define UUIDs for the service and characteristics
-_SERVICE_UUID = bluetooth.UUID(0x1848)
-_WRITE_CHARACTERISTIC_UUID = bluetooth.UUID(0x2A6E)  # Central writes here
-_READ_CHARACTERISTIC_UUID = bluetooth.UUID(0x2A6F)   # Peripheral responds here
+from ble_uart import BLEUART
 
 # ADC Channel 4 reads the temperature sensor
 sensor_temp = ADC(4)
 conversion_factor = 3.3 / 65535  # Conversion factor for ADC reading to voltage
+
+TRIANGLE = 4
+CROSS = 16
+SQUARE = 32
+CIRCLE = 8
+SELECT = 2
+START = 1
 
 
 # Function to read the internal temperature
@@ -23,93 +25,15 @@ def read_temperature():
     return temperature
 
 
-# Show the MAC address for the current Pico
-ble = bluetooth.BLE()
-ble.active(True)
-_, mac_address = ble.config('mac')
-formatted_mac = ':'.join(f'{b:02X}' for b in mac_address)
-print(f"Bluetooth MAC Address for this device is: {formatted_mac}")
-ble.active(False)
-ble = None
-
-IAM = "Peripheral"
-
-# Bluetooth parameters
-BLE_NAME = f"{IAM}"  # Dynamic name for the device
-BLE_SVC_UUID = _SERVICE_UUID
-BLE_APPEARANCE = 0x0300
-BLE_ADVERTISING_INTERVAL = 2000
-
 # state variables
 message_count = 0
 
 # Init HexaPod
 print("Init Hexapod")
 _hex = Hexapod()
-_hex.move(speed=-1, angle=0)
+_hex.move(speed=0, angle=0)
 speed = 0
 angle = 0
-
-
-def encode_message(message):
-    """Encode a message to bytes."""
-    return message.encode('utf-8')
-
-
-def decode_message(message):
-    """Decode a message from bytes."""
-    msg = message.decode('utf-8')
-    global speed, angle
-    speed = -1 # value -1 park leg to the zero position
-    angle = 0
-    if 'w' in msg:
-        _hex.direction = 1
-        _hex.rotation = 0
-        speed = 1
-    if 'a' in msg:
-        angle = 45
-    if 'd' in msg:
-        angle = -45
-    if 's' in msg:
-        _hex.direction = -1
-        _hex.rotation = 0
-        speed = 1
-    if 'r' in msg:
-        _hex.rotation = 1
-        _hex.direction = 1 if angle > 0 else -1
-        speed = 1
-    return msg
-
-
-async def send_data_task(connection, write_characteristic):
-    """Send data to the central device."""
-    global message_count
-    while True:
-        message = f"{read_temperature()}°C"
-        # print(f"Sending: {message}")
-
-        try:
-            msg = encode_message(message)
-            write_characteristic.write(msg)  # Peripheral writes data here
-            await asyncio.sleep(1)
-        except Exception as e:
-            print(f"Error while sending data: {e}")
-            continue
-
-
-async def receive_data_task(read_characteristic):
-    """Receive data from the central device."""
-    global speed, angle
-    while True:
-        try:
-            # This blocks until new data is available
-            data = read_characteristic.read()
-            if data:
-                print(f"Received: {decode_message(data)} speed: {speed}, angle: {angle}")
-                await asyncio.sleep(1)
-        except Exception as e:
-            print(f"Error receiving data: {e}")
-            break
 
 
 async def hex_move():
@@ -120,42 +44,38 @@ async def hex_move():
 
 
 async def run_peripheral_mode():
-    """Run the peripheral mode."""
-    global speed, angle
-    # Set up the Bluetooth service and characteristics
-    ble_service = aioble.Service(BLE_SVC_UUID)
+    ble = bluetooth.BLE()
+    uart = BLEUART(ble)
 
-    # Characteristic for the central to write
-    write_characteristic = aioble.Characteristic(
-        ble_service, _WRITE_CHARACTERISTIC_UUID,
-        read=True, write=True, capture=False
-    )
+    def on_rx():
+        global speed, angle
+        msg = uart.read()
+        if b'\xff\x01\x02\x01\x02' in msg:
+            print('Joystic Mode')
+        if b'\xff\x01\x01\x01\x02' in msg:
+            print('Digital Mode is NOT SUPPORTED')
+            return
+        try:
+            btn = msg[5]
 
-    # Characteristic for the peripheral to write
-    read_characteristic = aioble.Characteristic(
-        ble_service, _READ_CHARACTERISTIC_UUID,
-        read=True, write=True, capture=False
-    )
+            radius_n_angle = msg[6]
+            speed = radius_n_angle & 0x07
+            angle = -((radius_n_angle >> 3) * 15 - 90)
 
-    aioble.register_services(ble_service)
+            print("buttons: ", btn, "radius_n_angle: ", speed, angle)
+        except Exception:
+            print(msg)
 
-    print(f"{BLE_NAME} starting to advertise")
+    uart.irq(handler=on_rx)
 
-    while True:
-        async with await aioble.advertise(
-                BLE_ADVERTISING_INTERVAL, name=BLE_NAME, services=[BLE_SVC_UUID],
-                appearance=BLE_APPEARANCE) as connection:
-            print(f"{BLE_NAME} connected to {connection.device}")
+    try:
+        while True:
+            await hex_move()
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        pass
 
-            # Create tasks for sending and receiving data
-            tasks = [
-                asyncio.create_task(send_data_task(connection, read_characteristic)),
-                asyncio.create_task(receive_data_task(write_characteristic)),
-                asyncio.create_task(hex_move()),
-            ]
-            await asyncio.gather(*tasks)
-            print(f"{IAM} disconnected")
-            break
+    uart.close()
 
 
 asyncio.run(run_peripheral_mode())

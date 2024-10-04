@@ -42,7 +42,6 @@ class MotorSet:
 class Leg:
     def __init__(self, leg_id, motor_a: MotorSet, motor_b: MotorSet, motor_c: MotorSet, angle: int) -> None:
         self.road_map = []
-        self.direction = 1
         self.rotation = 0
         self.leg_id = leg_id
         self.motor_a = motor_a
@@ -83,20 +82,17 @@ class Leg:
         Y += self.Y_Rest
 
         if not self.rotation:
-            if self.leg_id in [1, 2, 3]:
+            if self.leg_id in [4, 2, 6]:
                 X = -X
-             
-            angle = self.angle + yaw
-            Y = self.Y_Rest + X * math.sin(angle)
-            X = X * math.cos(angle)
-
+            angle = self.angle - yaw
+            Y = self.Y_Rest + X * math.sin(math.radians(angle))
+            X = X * math.cos(math.radians(angle))
 
         # CALCULATE INVERSE KINEMATIC SOLUTION
         J1 = math.atan(X / Y) * (180 / math.pi)
         H = math.sqrt((Y * Y) + (X * X))
         L = math.sqrt((H * H) + (Z * Z))
-        J3 = math.acos(((self.J2L * self.J2L) + (self.J3L * self.J3L) - (L * L)) / (2 * self.J2L * self.J3L)) * (
-                180 / math.pi)
+        J3 = math.acos(((self.J2L * self.J2L) + (self.J3L * self.J3L) - (L * L)) / (2 * self.J2L * self.J3L)) * (180 / math.pi)
         J3_result = 2 * self.J3_rest - J3
         B = math.acos(((L * L) + (self.J2L * self.J2L) - (self.J3L * self.J3L)) / (2 * L * self.J2L)) * (180 / math.pi)
         A = math.atan(Z / H) * (180 / math.pi)  # BECAUSE Z REST IS NEGATIVE, THIS RETURNS A NEGATIVE VALUE
@@ -120,10 +116,7 @@ class Leg:
                 _z = Hexapod.up_ * math.sin(math.radians(i * part))
             else:
                 _z = Z
-            self.road_map.append(self._cartesian_move(_x,
-                                                      _y,
-                                                      _z,
-                                                      yaw))
+            self.road_map.append(self._cartesian_move(_x, _y, _z, yaw))
         self.old_coordinate = {"X": X, "Y": Y, "Z": Z}
 
 
@@ -133,7 +126,6 @@ class Hexapod:
 
     def __init__(self) -> None:
         self.motor_angles = {}
-        self._direction = 1
         self._rotation = 0
         self.angle = 30
         try:
@@ -155,7 +147,7 @@ class Hexapod:
         self.yaw = 0  # kyrs\
 
         self.leg_1 = Leg(1, MotorSet(self.driver_1, 4), MotorSet(self.driver_1, 5), MotorSet(self.driver_1, 6),
-                         angle = 180 -self.angle)  # ok
+                         angle = 180 +self.angle)  # ok
         self.leg_1.deviation_a = 0
         self.leg_1.deviation_b = -15
         self.leg_1.deviation_c = -20
@@ -167,13 +159,13 @@ class Hexapod:
         self.leg_2.deviation_c = -14
 
         self.leg_3 = Leg(3, MotorSet(self.driver_1, 12), MotorSet(self.driver_1, 13), MotorSet(self.driver_1, 14),
-                         angle = self.angle -180)  # ok
+                         angle = 120 +self.angle)  # ok
         self.leg_3.deviation_a = 0
         self.leg_3.deviation_b = -23
         self.leg_3.deviation_c = -8
 
         self.leg_4 = Leg(4, MotorSet(self.driver_2, 15), MotorSet(self.driver_2, 14), MotorSet(self.driver_2, 13),
-                         angle = 180 -self.angle)  # ok
+                         angle = 120 +self.angle)  # ok
         self.leg_4.deviation_a = 10
         self.leg_4.deviation_b = 20
         self.leg_4.deviation_c = -5
@@ -185,16 +177,12 @@ class Hexapod:
         self.leg_5.deviation_c = 7
 
         self.leg_6 = Leg(6, MotorSet(self.driver_2, 7), MotorSet(self.driver_2, 6), MotorSet(self.driver_2, 5),
-                         angle = -self.angle+180)  # ok
+                         angle = 180 +self.angle)  # ok
         self.leg_6.deviation_a = 0
         self.leg_6.deviation_b = 17
         self.leg_6.deviation_c = 25
 
-    def _step_left(self, angle):
-        if self.speed_multiplier < 0:
-            step = 0
-        else:
-            step = self.h_step*self.direction
+    def _step_left(self, step, angle):
 
         self.leg_1.wave_move(step, 0, 0, angle)
         self.leg_5.wave_move(step, 0, 0, angle)
@@ -204,11 +192,7 @@ class Hexapod:
         self.leg_2.wave_move(-step, 0, 0, angle)
         self.leg_6.wave_move(-step, 0, 0, angle)
 
-    def _step_right(self, angle):
-        if self.speed_multiplier < 0:
-            step = 0
-        else:
-            step = self.h_step*self.direction
+    def _step_right(self, step, angle):
 
         self.leg_1.wave_move(-step, 0, 0, angle)
         self.leg_5.wave_move(-step, 0, 0, angle)
@@ -219,7 +203,7 @@ class Hexapod:
         self.leg_6.wave_move(step, 0, 0, angle)
 
     def _speed(self, speed):
-        self.speed_multiplier = speed
+        self.speed_multiplier = math.fabs(speed)
 
     def _move(self):
         l2 = self.leg_2.drive()
@@ -242,31 +226,19 @@ class Hexapod:
 
     async def move(self, speed=1, angle=0):
         self._speed(speed)
-        if speed != 0:
-            self._step_left(angle)
-            self._move()
-            await asyncio.sleep(0.1)
-
-            self._step_right(angle)
-            self._move()
-            await asyncio.sleep(0.1)
-        else:
+        step = self.h_step if self.speed_multiplier != 0 else 0
+        if speed == 0:
             await asyncio.sleep(0.5)
             print("idle")
 
-    @property
-    def direction(self):
-        return self._direction
+        self._step_left(step, angle)
+        self._move()
+        await asyncio.sleep(0.1)
 
-    @direction.setter
-    def direction(self, _direction):
-        self.leg_1.direction = _direction
-        self.leg_2.direction = _direction
-        self.leg_3.direction = _direction
-        self.leg_4.direction = _direction
-        self.leg_5.direction = _direction
-        self.leg_6.direction = _direction
-        self._direction = _direction
+        self._step_right(step, angle)
+        self._move()
+        await asyncio.sleep(0.1)
+
 
     @property
     def rotation(self):
@@ -287,9 +259,9 @@ class Hexapod:
 async def main():
     _hex = Hexapod()
     _hex.rotation = 0
-    _hex.direction = 1
+
     print("move")
-    await _hex.move(speed=-1, angle=0)
+    await _hex.move(speed=0, angle=0)
     print("sleep")
     time.sleep(3)
 
