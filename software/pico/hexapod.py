@@ -75,18 +75,13 @@ class Leg:
                    f"{self.leg_id}:c": w}
 
     def _cartesian_move(self, X, Y, Z, yaw):
-        
+        angle = self.angle - yaw
         # OFFSET TO REST POSITION
         Z = -Z
         Z += self.Z_Rest
-        Y += self.Y_Rest
-
-        if not self.rotation:
-            if self.leg_id in [4, 2, 6]:
-                X = -X
-            angle = self.angle - yaw
-            Y = self.Y_Rest + X * math.sin(math.radians(angle))
-            X = X * math.cos(math.radians(angle))
+        X = -X if self.leg_id in [4, 2, 6] else X
+        Y = self.Y_Rest + X * math.sin(math.radians(angle))
+        X = X * math.cos(math.radians(angle))
 
         # CALCULATE INVERSE KINEMATIC SOLUTION
         J1 = math.atan(X / Y) * (180 / math.pi)
@@ -183,24 +178,28 @@ class Hexapod:
         self.leg_6.deviation_c = 25
 
     def _step_left(self, step, angle):
+        x = -1 if self._rotation else 1
 
-        self.leg_1.wave_move(step, 0, 0, angle)
-        self.leg_5.wave_move(step, 0, 0, angle)
-        self.leg_3.wave_move(step, 0, 0, angle)
+        self.leg_1.wave_move(step[0], 0, 0, angle)
+        self.leg_5.wave_move(step[1], 0, 0, angle)
+        self.leg_3.wave_move(step[2], 0, 0, x*angle)
 
-        self.leg_4.wave_move(-step, 0, 0, angle)
-        self.leg_2.wave_move(-step, 0, 0, angle)
-        self.leg_6.wave_move(-step, 0, 0, angle)
+        self.leg_4.wave_move(-step[0], 0, 0, angle)
+        self.leg_2.wave_move(-step[1], 0, 0, angle)
+        self.leg_6.wave_move(-step[2], 0, 0, x*angle)
 
     def _step_right(self, step, angle):
+        x = -1 if self._rotation else 1
 
-        self.leg_1.wave_move(-step, 0, 0, angle)
-        self.leg_5.wave_move(-step, 0, 0, angle)
-        self.leg_3.wave_move(-step, 0, 0, angle)
+        self.leg_1.wave_move(-step[0], 0, 0, angle)
+        self.leg_5.wave_move(-step[1], 0, 0, angle)
+        self.leg_3.wave_move(-step[2], 0, 0, x*angle)
 
-        self.leg_4.wave_move(step, 0, 0, angle)
-        self.leg_2.wave_move(step, 0, 0, angle)
-        self.leg_6.wave_move(step, 0, 0, angle)
+        self.leg_4.wave_move(step[0], 0, 0, angle)
+        self.leg_2.wave_move(step[1], 0, 0, angle)
+        self.leg_6.wave_move(step[2], 0, 0, x*angle)
+        
+    
 
     def _speed(self, speed):
         self.speed_multiplier = math.fabs(speed)
@@ -230,12 +229,57 @@ class Hexapod:
         if speed == 0:
             await asyncio.sleep(0.5)
             print("idle")
+        if self.rotation:
+            
+            radius = 30
+            a = 10 # step of low central leg
+            _angle = math.degrees(2*math.asin(a/(2*radius)))
+            aa = 7
+            bb = 95.8
+            ad = 71.7
+            od = radius + ad
+            ob = math.sqrt(math.pow((bb/2),2) + math.pow((radius+aa),2))
+            oc = math.sqrt(math.pow((bb/2),2) + math.pow((od-aa),2))
+            
+            b = (ob*a)/radius
+            c = (oc*a)/radius
+            d = (od*a)/radius
+            print(a,b,c,d,"::",angle)
+            side = "r"
+            if 0 <= angle <= 90:
+                side = "r"
+            elif -260 <= angle < -180:
+                print(":: ROTATION :: back right", _angle)
+                side = "r"
+                _angle -= 180 
+            elif -180 <= angle < -90:
+                print(":: ROTATION :: back left", _angle)
+                _angle = -_angle -180
+                side = "l"
+            else:
+                side = "l"
+            # right
+            if side == "r":
+                
+                sl = [c, a, c]
+                sr = [b, d, b]
+            # left
+            elif side == "l":
+                sl = [b, d, b]
+                sr = [c, a, c]
+            angle = _angle
+            print(a,b,c,d,"::",angle)
+        else:
+            print(f"HexaPod.move(speed={speed}, angle={angle})")
+            sl = [step, step, step]
+            sr = [step, step, step]
 
-        self._step_left(step, angle)
+                
+        self._step_left(sl, angle)
         self._move()
         await asyncio.sleep(0.1)
-
-        self._step_right(step, angle)
+        
+        self._step_right(sr, angle)
         self._move()
         await asyncio.sleep(0.1)
 

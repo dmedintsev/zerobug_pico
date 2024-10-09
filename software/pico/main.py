@@ -1,3 +1,4 @@
+import aioble
 import bluetooth
 from machine import ADC
 import asyncio
@@ -48,7 +49,7 @@ async def run_peripheral_mode():
     uart = BLEUART(ble)
 
     def on_rx():
-        global speed, angle
+        global speed, angle, TRIANGLE
         msg = uart.read()
         if b'\xff\x01\x02\x01\x02' in msg:
             print('Joystic Mode')
@@ -57,7 +58,12 @@ async def run_peripheral_mode():
             return
         try:
             btn = msg[5]
-
+            if btn & TRIANGLE:
+                print("TRIANGLE is pressed")
+                _hex.rotation = 1
+            else:
+                _hex.rotation = 0
+            
             radius_n_angle = msg[6]
             speed = radius_n_angle & 0x07
             angle = -((radius_n_angle >> 3) * 15 - 90)
