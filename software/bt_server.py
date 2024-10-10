@@ -4,6 +4,12 @@ from sys import exit
 from bleak import BleakClient, uuids
 import keyboard
 
+TRIANGLE = 4
+CROSS = 16
+SQUARE = 32
+CIRCLE = 8
+SELECT = 2
+START = 1
 
 active_keys = []
 
@@ -25,16 +31,51 @@ keyboard.hook(hooke, suppress=True)
 pico_address = "28:CD:C1:0E:9D:2F"  # Update this with your Pico W's address
 
 # Service UUID (0x1848) - but we need to normalize it to 128-bit UUID
-SERVICE_UUID = uuids.normalize_uuid_16(0x1848)
-WRITE_CHARACTERISTIC_UUID = uuids.normalize_uuid_16(0x2A6E) # Central writes here
-READ_CHARACTERISTIC_UUID = uuids.normalize_uuid_16(0x2A6F)  # Central reads here
+SERVICE_UUID = uuids.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
+WRITE_CHARACTERISTIC_UUID = uuids.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E") # Central writes here
+READ_CHARACTERISTIC_UUID = uuids.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")  # Central reads here
+
+def pack_prepare(active_keys):
+    null_pack = [b'\xff', b'\x01', b'\x02', b'\x01', b'\x02', b'\x00', b'\x00', b'\x00']
+    null_pack[5] = 0  # keys
+    null_pack[6] = 0  # vector of direction (speed: -7..+7; angle: 0..360 degrees)
+
+    if "r" in active_keys:
+        null_pack[5] = null_pack[5] | TRIANGLE
+    if "w" in active_keys:
+        if "a" in active_keys:
+            null_pack[6] = null_pack[6] | 9
+        elif "d" in active_keys:
+            null_pack[6] = null_pack[6] | 3
+        else:
+            null_pack[6] = null_pack[6] | 6
+    elif "s" in active_keys:
+        if "a" in active_keys:
+            null_pack[6] = null_pack[6] | 15
+        elif "d" in active_keys:
+            null_pack[6] = null_pack[6] | 21
+        else:
+            null_pack[6] = null_pack[6] | 18
+    elif "a" in active_keys:
+        null_pack[6] = null_pack[6] | 24
+    elif "d" in active_keys:
+        null_pack[6] = null_pack[6] | 12
+    if len(active_keys) > 0:
+        null_pack[6] = ((null_pack[6] << 3) | 7)
+    null_pack[5] = null_pack[5].to_bytes(1, 'big')
+    null_pack[6] = null_pack[6].to_bytes(1, 'big')
+    print(null_pack)
+    res = b''.join(null_pack)
+    print(res)
+    return res
+
 
 async def send_data_task(client):
     """Send data to the peripheral device."""
     while True:
         message = f"{active_keys}".encode("utf-8")
         # print(f"Central sending: {message}")
-        await client.write_gatt_char(WRITE_CHARACTERISTIC_UUID, message)
+        await client.write_gatt_char(WRITE_CHARACTERISTIC_UUID, pack_prepare(active_keys))
         await asyncio.sleep(0.5)
 
 async def receive_data_task(client):
