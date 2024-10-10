@@ -244,8 +244,7 @@ class Hexapod:
             b = (ob*a)/radius
             c = (oc*a)/radius
             d = (od*a)/radius
-            print(a,b,c,d,"::",angle)
-            side = "r"
+            # print(a,b,c,d,"::",angle)
             if 0 <= angle <= 90:
                 side = "r"
             elif -260 <= angle < -180:
@@ -258,6 +257,7 @@ class Hexapod:
                 side = "l"
             else:
                 side = "l"
+                _angle = -_angle
             # right
             if side == "r":
                 
